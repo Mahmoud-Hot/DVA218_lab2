@@ -1,5 +1,19 @@
-/* File: server.c
- * Trying out socket communication between processes using the Internet protocol family.
+/*
+ * Server file to test out TCP communication with clients.
+ * Will notify all active clients when a new client is connected.
+ * Replys to every message received by a client.
+ *
+ * Run instructions:
+ * compile server: gcc server.c -o server
+ * execute: ./server
+ *
+ * Created by:
+ * Casper Wahl (cwl17001)
+ * Hawkar Karim (ham17002)
+ * Viktor Lindgren (vln16005)
+ *
+ *
+ * For DVA228 laboration 2 at MDH
  */
 
 #include <stdio.h>
@@ -18,7 +32,6 @@
 #define MAXMSG 512
 
 
-int blockedIP;
 
 /* makeSocket
  * Creates and names a socket in the Internet
@@ -32,7 +45,7 @@ int blockedIP;
  */
 
 
-
+//standard linked list for our list of active sockets
 typedef struct LinkedList{
     int sock;
     struct LinkedList *node;
@@ -91,13 +104,15 @@ int readMessageFromClient(int fileDescriptor) {
     else
         /* Data read */
         printf(">Incoming message: %s\n",  buffer);
-    reply(fileDescriptor);
+    reply(fileDescriptor);  //calls the reply function when we receive a message from a client
     return(0);
 }
 void reply(int fileDescriptor){
-    write(fileDescriptor, "I hear you dude..", MAXMSG);
+    write(fileDescriptor, "I hear you dude..", MAXMSG); //When the client sends a message we reply with i hear you, works like an ACK
 }
 
+
+//Adds every new socket to the linked list
 void addToSocketList(int socket){
 
     SockList *temp, *current;
@@ -120,6 +135,7 @@ void addToSocketList(int socket){
     return;
 }
 
+//Removes the specific socket from our linked list, this is when a client disconnects or is blocked.
 void removeFromList(int ID, SockList *head){
 
     SockList * current = head;
@@ -183,17 +199,18 @@ int main(int argc, char *argv[]) {
                     /* Accept the connection request from a client. */
                     clientSocket = accept(sock, (struct sockaddr *)&clientName, (socklen_t *)&size);
 
-                    if(clientName.sin_addr.s_addr == inet_addr("127.0.0.2")){
+                    if(clientName.sin_addr.s_addr == inet_addr("127.0.0.2")){  //checks if the IP of the user is a blocked IP address and denies if it is.
                         printf("Connection refused, blocked ip.");
                         write(clientSocket, "Remote host close connection", MAXMSG);
                         close(i);
-                        removeFromList(sock, sockList);
+                        removeFromList(sock, sockList); //removes from linked list
                     }
 
                     if(clientSocket < 0) {
                         perror("Could not accept connection\n");
                         exit(EXIT_FAILURE);
                     }
+
 
 
                     printf("Server: Connect from client %s, port %d\n",
@@ -207,19 +224,15 @@ int main(int argc, char *argv[]) {
                         write(current->sock, "New client!", MAXMSG);
                         current=current->node;
                     }
-                    addToSocketList(clientSocket);
+                    addToSocketList(clientSocket); //adds client to socket list
 
-                    /*int len = sizeof(activeFdSet.__fds_bits) /sizeof(activeFdSet.__fds_bits[0]);
-                    for(int i = 0; i<len; i++){
-                        write(activeFdSet.__fds_bits[i], "New client connected", MAXMSG);
-                    }*/
 
                 }
                 else {
                     /* Data arriving on an already connected socket */
                     if(readMessageFromClient(i) < 0) {
                         close(i);
-                        removeFromList(i, sockList);
+                        removeFromList(i, sockList); //when a clients closes connection we want to remove them from the linked list
                         FD_CLR(i, &activeFdSet);
                     }
                 }

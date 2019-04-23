@@ -1,9 +1,17 @@
 /*
- * compile client: gcc client.c -o client -lpthread
- * compile server: gcc server.c -o server
+ * Client file that sends message to a server, uses separate thread to listen for any replys.
+ *
+ * Run instructions:
+ * compile: gcc client.c -o client -lpthread
+ * execute: ./client 127.0.0.1
  *
  *
+ * Created by:
+ * Casper Wahl (cwl17001)
+ * Hawkar Karim (ham17002)
+ * Viktor Lindgren (vln16005)
  *
+ * For DVA228 laboration 2 at MDH
  *
  * */
 
@@ -51,9 +59,13 @@ void initSocketAddress(struct sockaddr_in *name, char *hostName, unsigned short 
     /* Fill in the host name into the sockaddr_in struct. */
     name->sin_addr = *(struct in_addr *)hostInfo->h_addr;
 }
-/* writeMessage
- * Writes the string message to the file (socket)
- * denoted by fileDescriptor.
+
+
+
+/*
+ * Loops and checks if the server has sent a new message,
+ * ex if a new client has connected.
+ * This func is ran on a separate thread.
  */
 int readMessageFromServer(int fileDescriptor) {
     while(1){
@@ -92,9 +104,6 @@ void writeMessage(int fileDescriptor, char *message) {
 }
 
 
-/*
- * KLIENT BEHÖVER TRÅD SOM LÄSER IN MEDDELANDE, ANNARS komemr den vänta tills den skickar
- */
 int main(int argc, char *argv[]) {
     int sock;
     struct sockaddr_in serverName;
@@ -128,6 +137,9 @@ int main(int argc, char *argv[]) {
     printf("Type 'quit' to nuke this program.\n");
     fflush(stdin);
 
+
+    //thread to run the listener function
+    //passes the clients socket to the function as argument
     pthread_t readMessage;
     pthread_create(&readMessage, NULL, readMessageFromServer, (int*)sock);
 
